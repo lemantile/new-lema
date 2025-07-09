@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wildlife Damage Report</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background-color: #f4f9f4;
+      color: #333;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .navbar {
+      width: 100%;
+      background: #2e8b57;
+      color: #fff;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 999;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .navbar .logo {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .navbar .nav-links a {
+      color: #fff;
+      text-decoration: none;
+      margin-left: 20px;
+      font-size: 16px;
+      transition: color 0.3s;
+    }
+
+    .navbar .nav-links a:hover {
+      color: #c4b5fd;
+    }
+
+    h2 {
+      color: #2e8b57;
+      text-align: center;
+      margin-top: 100px;
+      margin-bottom: 20px;
+    }
+
+    form {
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 500px;
+      width: 100%;
+      margin: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    input[type="text"],
+    input[type="file"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    input[readonly] {
+      background-color: #e9ecef;
+      color: #555;
+      cursor: not-allowed;
+    }
+
+    button[type="submit"] {
+      background-color: #2e8b57;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 16px;
+      transition: background-color 0.3s;
+    }
+
+    button[type="submit"]:hover {
+      background-color: #256d45;
+    }
+
+    .preview {
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    .preview img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <div class="logo">Wildlife Portal</div>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="contact.html">Contact</a>
+    </div>
+  </div>
+
+  <h2>🌾 Wildlife Damage Report Form 🐾</h2>
+
+  <form id="damageForm">
+    <label for="reporter">Your Name:</label>
+    <input type="text" id="reporter" name="reporter" required>
+
+    <label for="location">Incident Location:</label>
+    <input type="text" id="location" name="location" required readonly placeholder="Fetching your location...">
+
+    <label for="damageType">Type of Damage:</label>
+    <select id="damageType" name="damageType" required>
+      <option value="">-- Select One --</option>
+      <option value="crop">Crop Damage</option>
+      <option value="livestock">Predators</option>
+      <option value="property">Property Damage</option>
+      <option value="property">Human killings</option>
+    </select>
+
+    <label for="description">Description of the Incident:</label>
+    <textarea id="description" name="description" rows="5" required></textarea>
+
+    <label for="photo">Take or Upload Photo:</label>
+    <input type="file" id="photo" name="photo" accept="image/*" capture="environment" multiple>
+
+    <div class="preview" id="preview"></div>
+
+    <button type="submit">Submit Report</button>
+  </form>
+
+  <script>
+    window.addEventListener("load", function () {
+      const locationInput = document.getElementById("location");
+
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(async function (position) {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+
+          try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+            const data = await response.json();
+
+            let displayText;
+            if (data && data.display_name) {
+              displayText = `${data.display_name} (Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)})`;
+            } else {
+              displayText = `Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`;
+            }
+
+            locationInput.value = displayText;
+          } catch (err) {
+            console.error("Geocoding error:", err);
+            locationInput.value = `Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`;
+          }
+
+        }, function (error) {
+          console.error("Geolocation error:", error.message);
+          locationInput.value = "Could not fetch location.";
+        });
+      } else {
+        locationInput.value = "Geolocation not supported.";
+      }
+    });
+
+    document.getElementById("photo").addEventListener("change", function () {
+      const previewDiv = document.getElementById("preview");
+      previewDiv.innerHTML = ""; // Clear previous previews
+
+      const files = this.files;
+      if (files.length > 0) {
+        Array.from(files).forEach(file => {
+          if (file.type.startsWith("image/")) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+              const img = document.createElement("img");
+              img.src = e.target.result;
+              previewDiv.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+      }
+    });
+
+    document.getElementById("damageForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      alert("Thank you for reporting the incident! Our team will review it shortly.");
+      this.reset();
+
+      document.getElementById("preview").innerHTML = "";
+    });
+  </script>
+</body>
+</html>
